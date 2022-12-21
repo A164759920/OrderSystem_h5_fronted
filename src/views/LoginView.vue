@@ -3,7 +3,7 @@
         <div class="header">
             点 餐 管 理 系 统
         </div>
-        <div class="login" :class="{'input':isFocus}">
+        <div class="login" :class="{ 'input': isFocus }">
             <div class="login-title">登 录</div>
             <CusInput class="username" v-model="username" type="text" custom="outline" placeholder="Username" clearable
                 prefix-icon="el-icon-user" @focus="inputFocus" @blur="inputBlur"></CusInput>
@@ -29,7 +29,7 @@ export default {
     },
     data: function () {
         return {
-            isFocus:false,
+            isFocus: false,
             username: '',
             password: '',
             domain: BUS.DOMAIN
@@ -55,6 +55,8 @@ export default {
                         if (res.data.code === 0) {
                             console.log(res.data.msg)
                             this.$router.push("/home")
+                            // 保存用户名
+                            BUS.Cname = this.username
                         }
                         else {
                             console.log(res.data.msg)
@@ -78,17 +80,13 @@ export default {
         inputFocus: function () {
             const login = document.getElementsByClassName("login")
             login[0].classList.add('input')
-          
+
         },
         inputBlur: function () {
-            this.isFocus= false
+            this.isFocus = false
             const login = document.getElementsByClassName("login")
             login[0].classList.remove("input")
         },
-        // inputFocus2: function () {
-        //     const login = document.getElementsByClassName("login")
-        //     login[1].classList.toggle('input')
-        // }
     },
     mounted: function () {
 

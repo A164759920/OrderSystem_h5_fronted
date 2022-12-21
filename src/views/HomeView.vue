@@ -23,16 +23,42 @@
           </div>
         </div>
       </div>
+      <div class="menu-footer">
+        已经到底了～
+      </div>
     </div>
-    <div class="footer" @click="showCar">
-
+    <div :class="isShowCarClass">
+      <div class="car-header">
+        <div class="header-text">我的购物车 ({{ shoppingCar.length }})</div>
+        <div class="header-right" @click="cleanShopCar">
+          <div class="el-icon-delete"></div>
+          清空购物车
+        </div>
+      </div>
+      <div class="car-list">
+        <div class="car-list-item" v-for="(item, index) in shoppingCar">
+          <img class="car-item-left" src="" alt="">
+          <div class="car-item-right">
+            <div class="car-item-right-title">{{ item.Dname }}</div>
+            <div class="car-item-right-price">￥{{ item.Dprice * item.Dcount }}</div>
+            <div class="car-item-right-count">x{{ item.Dcount }}</div>
+            <div class="car-item-right-control">
+              <div class="el-icon-remove" @click="removeFromCount(item, item.countIndex)"></div>
+              <div class="car-right-control-count">{{ item.Dcount }}</div>
+              <div class="el-icon-circle-plus" @click="addToCount(item, item.countIndex)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
       <div class="carButton" :class="{ 'activeCar': shoppingCar.length > 0 ? true : false }">
-        <div class="carButton-left">
+        <div class="carButton-left" @click="showCar">
           <div class="el-icon-dish"></div>
           <div :class="isShowTotalPrice">￥{{ totalPrice }}</div>
         </div>
-        <div class="carButton-text">
-          未选购餐品
+        <div class="carButton-text" @click="createNewOrder">
+          {{ carButtonText }}
         </div>
       </div>
     </div>
@@ -44,60 +70,54 @@
 
 import axios from 'axios';
 import * as BUS from '@/eventBus/index.js'
-import MenuViewVue from './MenuView.vue';
 export default {
   name: 'HomeView',
-  components: {
-    MenuViewVue
-  },
   data: function () {
     return {
       domain: BUS.DOMAIN,
       typeList: [],
       dishList: [],
       activeNav: 0,
-      activeNavName: "",
-      buyCount: [],
-      shoppingCar: [],
-      totalPrice: 0,
+      buyCount: [], // 每个商品的购买数量
+      shoppingCar: [], // 购物车信息
+      totalPrice: 0,  // 总价
+      isShowCar: false // 是否显示购物车
     }
   },
   computed: {
     isShowTotalPrice: function () {
       return this.totalPrice > 0 ? `carButton-price-on` : `carButton-price-off`
+    },
+    carButtonText: function () {
+      return this.totalPrice > 0 ? `选好了` : `未选购餐品`
+      // return this.shoppingCar.length > 0 ? `选好了` : `未选购餐品`
+    },
+    isShowCarClass: function () {
+      return this.isShowCar ? `show-car-on` : `show-car-off`
     }
   },
   methods: {
     changeActiveNav: function (index) {
-      console.log(index)
       this.activeNav = index
     },
     addToCount: function (item, index) {
-      console.log(item)
       this.$set(this.buyCount[this.activeNav], index, this.buyCount[this.activeNav][index] + 1)
       this.updateShoppingCar(0, {
         Dname: item.Dname,
         Dcount: this.buyCount[this.activeNav][index],
-        Dprice: item.Dprice
+        Dprice: item.Dprice,
+        countIndex: index
       })
-      // this.shoppingCar.push({
-      //   Dname: item.Dname,
-      //   Dcount: this.buyCount[this.activeNav][index],
-      //   Dprice: item.Dprice
-      // })
     },
     removeFromCount: function (item, index) {
+      // 更新二维数组
       this.$set(this.buyCount[this.activeNav], index, this.buyCount[this.activeNav][index] - 1)
       this.updateShoppingCar(1, {
         Dname: item.Dname,
         Dcount: this.buyCount[this.activeNav][index],
-        Dprice: item.Dprice
+        Dprice: item.Dprice,
+        countIndex: index
       })
-      // this.shoppingCar.push({
-      //   Dname: item.Dname,
-      //   Dcount: this.buyCount[this.activeNav][index],
-      //   Dprice: item.Dprice
-      // })
     },
     /**
      * 计算总价
@@ -109,6 +129,11 @@ export default {
       })
       return totalPrice
     },
+    /**
+     * 更新购物车信息
+     * @param {Number} type 0:添加餐品 1:删除餐品 
+     * @param {Object} dishObj 餐品对象
+     */
     updateShoppingCar: function (type, dishObj) {
       const that = this
       console.log(dishObj)
@@ -142,9 +167,49 @@ export default {
       // 更新总价
       this.totalPrice = this.computeTotalPrice()
     },
+    /**
+     *  展示购物车详细信息
+     */
     showCar: function () {
-      console.log("购物车", this.shoppingCar)
-      console.log("总价", typeof this.totalPrice)
+      this.isShowCar = !this.isShowCar;
+    },
+    /**
+     *  清除购物车
+     */
+    cleanShopCar: function () {
+      this.shoppingCar = []
+      this.totalPrice = 0
+      this.isShowCar = false
+      this.buyCount[this.activeNav] = new Array(this.dishList[this.activeNav].length).fill(0)
+    },
+    /**
+     * 创建新订单
+     */
+    createNewOrder: async function () {
+      if (this.shoppingCar.length > 0) {
+        const orderData = {
+          Cname: BUS.Cname,
+          Ototal: this.totalPrice,
+          dishList: this.shoppingCar
+        }
+        try {
+          const res = await axios.post(`${this.domain}/OrderAdd`,
+            orderData
+          )
+          if (res.data.code === 0) {
+            console.log("订单创建成功")
+            alert("✅订单已提交")
+          }
+          else {
+            alert("❎订单提交失败")
+          }
+        } catch (error) {
+          alert("❎订单提交失败")
+        }
+
+      }
+
+
     }
   },
   mounted: function () {
@@ -214,7 +279,8 @@ $activeColor: #03A9F4;
 
     .active {
       background-color: #03A9F4;
-      color: white
+      color: white;
+      font-family: 500;
     }
   }
 
@@ -288,7 +354,108 @@ $activeColor: #03A9F4;
             }
 
             .el-icon-remove {
+              // color: $activeColor;
+              font-size: 20px;
+            }
+
+            .el-icon-circle-plus {
               color: $activeColor;
+              font-size: 20px;
+            }
+          }
+        }
+      }
+    }
+    .menu-footer{
+      width: 100%;
+      height: $bottomHeight;
+      line-height: $bottomHeight;
+      text-align: center;
+      color: #9E9E9E;
+    }
+  }
+
+  .show-car-on {
+    position: absolute;
+    bottom: $bottomHeight;
+    z-index: 99;
+    padding-top: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
+    max-height: 250px;
+    width: calc(100% - 20px);
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    background-color: white;
+
+
+    .car-header {
+      display: flex;
+      justify-content: space-between;
+      color: #757575;
+      font-size: 14px;
+    }
+
+    .car-list {
+      width: 100%;
+      margin-top: 10px;
+      max-height: 220px;
+      overflow-y: scroll;
+      overflow-x: hidden;
+
+      .car-list-item {
+        width: 100%;
+        height: 75px;
+        display: flex;
+
+        .car-item-left {
+          width: 60px;
+          height: 60px;
+          background-color: #212121;
+        }
+
+        .car-item-right {
+          position: relative;
+          flex-grow: 1;
+          height: 100%;
+
+          .car-item-right-title {
+            position: absolute;
+            top: 0;
+            left: 10px;
+            font-size: 16px;
+            font-weight: 550;
+            color: #212121;
+          }
+
+          .car-item-right-price {
+            position: absolute;
+            left: 10px;
+            bottom: 0;
+            color: #03A9F4;
+            font-weight: 550;
+          }
+
+          .car-item-right-count {
+            position: absolute;
+            left: 15px;
+            top: 30px;
+            color: #757575;
+            font-size: 13px;
+          }
+
+          .car-item-right-control {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 80px;
+            height: 30px;
+
+            .el-icon-remove {
+              // color: $activeColor;
               font-size: 20px;
             }
 
@@ -302,9 +469,14 @@ $activeColor: #03A9F4;
     }
   }
 
+  .show-car-off {
+    display: none;
+  }
+
   .footer {
     position: absolute;
     bottom: 0;
+    z-index: 100;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -312,7 +484,7 @@ $activeColor: #03A9F4;
     align-items: center;
     height: $bottomHeight;
     background: rgba(245, 245, 245, 0.8);
-    z-index: 100;
+
 
     .carButton {
       display: flex;
@@ -332,10 +504,12 @@ $activeColor: #03A9F4;
         display: flex;
         justify-content: center;
         align-items: center;
+
         .carButton-price-off {
           display: none;
         }
-        .carButton-price-on{
+
+        .carButton-price-on {
           display: block;
         }
       }
