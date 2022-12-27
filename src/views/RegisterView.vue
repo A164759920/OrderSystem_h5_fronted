@@ -1,18 +1,20 @@
 <template>
     <div class="container">
         <div class="header">
-            点 餐 应 用
+            点 餐 管 理 系 统
         </div>
-        <div class="login" :class="{ 'input': isFocus }">
-            <div class="login-title">登 录</div>
-            <CusInput class="username" v-model="username" type="text" custom="outline" placeholder="Username" clearable
+        <div class="register" :class="{ 'input': isFocus }">
+            <div class="register-title">注 册</div>
+            <CusInput class="username" v-model="username" type="text" custom="outline" placeholder="用户名" clearable
                 prefix-icon="el-icon-user" @focus="inputFocus" @blur="inputBlur"></CusInput>
-            <CusInput class="password" v-model="password" type="text" custom="outline" placeholder="Password" clearable
+            <CusInput class="cphone" v-model="Cphone" type="text" custom="outline" placeholder="联系电话" clearable
+                prefix-icon="el-icon-user" style="margin-top:10px" @focus="inputFocus" @blur="inputBlur"></CusInput>
+            <CusInput class="password" v-model="password" type="text" custom="outline" placeholder="密码" clearable
                 prefix-icon="el-icon-lock" style="margin-top:10px" @focus="inputFocus" @blur="inputBlur"></CusInput>
-            <div class="login-button" @click="login">
-                登录
-            </div>
-            <div class="register-button" @click="toRegister">
+            <CusInput class="repassword" v-model="rePassword" type="text" custom="outline" placeholder="确认密码" clearable
+                prefix-icon="el-icon-lock" style="margin-top:10px" @focus="inputFocus" @blur="inputBlur"></CusInput>
+
+            <div class="register-button" @click="register">
                 注册
             </div>
         </div>
@@ -32,12 +34,15 @@ export default {
             isFocus: false,
             username: '',
             password: '',
+            rePassword: '',
+            Cphone:"",
             domain: BUS.DOMAIN
         }
     },
     methods: {
 
         login: async function () {
+            console.log(this.username, this.password)
             if (this.username === "" || this.password === "") {
                 this.$notify.error({
                     title: "登录失败",
@@ -52,6 +57,7 @@ export default {
                         })
                     if (res) {
                         if (res.data.code === 0) {
+                            console.log(res.data.msg)
                             this.$router.push("/home")
                             // 保存用户名
                             BUS.Cname = this.username
@@ -72,17 +78,42 @@ export default {
                 }
             }
         },
-        toRegister: function () {
-            this.$router.push('/register')
+        register: async function () {
+            const that = this
+            if (this.password === this.rePassword) {
+                try {
+                    const res = await axios.post(`${this.domain}/register`, {
+                        Cname: this.username,
+                        Cpwd: this.rePassword,
+                        Cphone:this.Cphone
+                    })
+                    if (res.data.code === 0) {
+                        alert("注册成功,3秒后将自动登录")
+                        setTimeout(() => {
+                            // this.$router.push("/home")
+                            that.login()
+                        }, 3 * 1000);
+                    } else {
+                        alert(`注册失败
+                        ⚠${res.data.error}`)
+                    }
+                } catch (error) {
+                    alert(`注册失败
+                        ⚠${error}`)
+                }
+            } else {
+                alert(`注册失败
+                ⚠两次输入密码不一致`)
+            }
         },
         inputFocus: function () {
-            const login = document.getElementsByClassName("login")
+            const login = document.getElementsByClassName("register")
             login[0].classList.add('input')
 
         },
         inputBlur: function () {
             this.isFocus = false
-            const login = document.getElementsByClassName("login")
+            const login = document.getElementsByClassName("register")
             login[0].classList.remove("input")
         },
     },
@@ -116,38 +147,22 @@ export default {
         font-weight: 550;
     }
 
-    .login {
-        width: 375px;
+    .register {
+        width: 400px;
         height: 300px;
         background-color: whitesmoke;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        max-width: 375px;
         min-width: 315px;
 
-        .login-title {
+        .register-title {
             color: #03A9F4;
             font-size: 20px;
             font-family: Arial, Helvetica, sans-serif;
             font-weight: 550;
             margin-bottom: 10px;
-        }
-
-        .login-button {
-            margin-top: 20px;
-            width: 230px;
-            height: 35px;
-            line-height: 35px;
-            text-align: center;
-            background-color: #03A9F4;
-            border-radius: 5px;
-            color: white;
-        }
-
-        .login-button:hover {
-            cursor: pointer;
         }
 
         .register-button {

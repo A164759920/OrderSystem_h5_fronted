@@ -16,7 +16,7 @@
                 'el-icon-remove': buyCount[activeNav][index] > 0 ? true : false
               }" @click="removeFromCount(item, index)"></div>
               <div class="right-count" :class="{
-                'active': buyCount[activeNav][index] > 0 ? true : false
+                'active':  buyCount[activeNav][index] > 0 ? true : false
               }">{{ buyCount[activeNav][index] }}</div>
               <div class="el-icon-circle-plus" @click="addToCount(item, index)"></div>
             </div>
@@ -136,7 +136,6 @@ export default {
      */
     updateShoppingCar: function (type, dishObj) {
       const that = this
-      console.log(dishObj)
       // 获取索引
       function getDishIndex(Dname) {
         let flagIndex = -1
@@ -202,9 +201,11 @@ export default {
           }
           else {
             alert("❎订单提交失败")
+            console.log(res.data)
           }
         } catch (error) {
           alert("❎订单提交失败")
+          console.log(res.data)
         }
 
       }
