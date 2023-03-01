@@ -16,9 +16,9 @@
                 'el-icon-remove': buyCount[activeNav][index] > 0 ? true : false
               }" @click="removeFromCount(item, index)"></div>
               <div class="right-count" :class="{
-                'active':  buyCount[activeNav][index] > 0 ? true : false
+                'active': buyCount[activeNav][index] > 0 ? true : false
               }">{{ buyCount[activeNav][index] }}</div>
-              <div class="el-icon-circle-plus" @click="addToCount(item, index)"></div>
+              <div class="el-icon-circle-plus" @touchstart="operaAnimationELment" @click="addToCount(item, index)"></div>
             </div>
           </div>
         </div>
@@ -45,7 +45,8 @@
             <div class="car-item-right-control">
               <div class="el-icon-remove" @click="removeFromCount(item, item.countIndex)"></div>
               <div class="car-right-control-count">{{ item.Dcount }}</div>
-              <div class="el-icon-circle-plus" @click="addToCount(item, item.countIndex)"></div>
+              <div class="el-icon-circle-plus" @click="addToCount(item, item.countIndex)">
+              </div>
             </div>
           </div>
         </div>
@@ -67,10 +68,14 @@
 
 <script>
 // @ is an alias to /src
-
+import Vue from 'vue'
+import AnimateIconVue from '@/components/AnimateIcon.vue';
 import axios from 'axios';
 import * as BUS from '@/eventBus/index.js'
 export default {
+  components: {
+    AnimateIconVue
+  },
   name: 'HomeView',
   data: function () {
     return {
@@ -81,7 +86,11 @@ export default {
       buyCount: [], // 每个商品的购买数量
       shoppingCar: [], // 购物车信息
       totalPrice: 0,  // 总价
-      isShowCar: false // 是否显示购物车
+      isShowCar: false, // 是否显示购物车
+      pricePosition: {
+        x: 0,
+        y: 0
+      }
     }
   },
   computed: {
@@ -97,6 +106,19 @@ export default {
     }
   },
   methods: {
+    testRender: function () {
+
+    },
+    /**
+     * 获取元素的位置
+     */
+    getItemPosition: function (e) {
+      const position = {
+        x: parseInt(e.targetTouches[0].clientX),
+        y: parseInt(e.targetTouches[0].clientY)
+      }
+      return position
+    },
     changeActiveNav: function (index) {
       this.activeNav = index
     },
@@ -108,6 +130,39 @@ export default {
         Dprice: item.Dprice,
         countIndex: index
       })
+    },
+    /**
+     * 处理图标动画 
+     */
+    operaAnimationELment: function (e) {
+      const containerDiv = document.getElementsByClassName("container")[0]
+      const animateMountDiv = document.createElement("div")
+      animateMountDiv.id = `animateIconMount`
+      containerDiv.appendChild(animateMountDiv)
+      const elPosition = this.getItemPosition(e) // 获取点击焦点位置
+      let childTemplate = Vue.extend(AnimateIconVue)
+      let childVue = new childTemplate().$mount(`#animateIconMount`)
+      childVue.$props.xEnd = this.pricePosition.x - 50
+      childVue.$props.yEnd = this.pricePosition.y - 50
+      childVue.$props.xStart = elPosition.x - 50
+      childVue.$props.yStart = elPosition.y - 50
+      // /**
+      //  * TODO:
+      //  * 1.动态创建相应的keyframes
+      //  *  【用时间戳为每次动画的参数实时命名？】
+      //  * 2.创建animation并动态定义其中的keyframes
+      //  * 3.将创建好的animation加入到cssRules中
+      //  * 4.在动画完成的callback中
+      //  *  - 删除新建的div
+      //  *  - 从cssRule中删除本次创建的keyframes
+      //  *  - 在【价签】中动态生成小红点
+      //  * 
+      //  */
+      // el.addEventListener('animationend', (event) => {
+      //   // 添加购物车红点图标
+      //   // 删除动画元素
+      //   // el.remove()
+      // })
     },
     removeFromCount: function (item, index) {
       // 更新二维数组
@@ -179,7 +234,13 @@ export default {
       this.shoppingCar = []
       this.totalPrice = 0
       this.isShowCar = false
-      this.buyCount[this.activeNav] = new Array(this.dishList[this.activeNav].length).fill(0)
+      // this.buyCount[this.activeNav] = new Array(this.dishList[this.activeNav].length).fill(0)
+      const newArray = []
+      this.dishList.forEach(item => {
+        const buyCountPart = new Array(item.length).fill(0)
+        newArray.push(buyCountPart)
+      })
+      this.buyCount = newArray
     },
     /**
      * 创建新订单
@@ -243,6 +304,27 @@ export default {
     }, error => {
       console.log("渲染错误", error)
     })
+    const priceDiv = document.getElementsByClassName("carButton-left")[0]
+    function getAbsLeft(el) {
+      var actualLeft = el.offsetLeft
+      var current = el.offsetParent
+      while (current != null) {
+        actualLeft += current.offsetLeft
+        current = current.offsetParent
+      }
+      return actualLeft
+    }
+    function getAbsTop(el) {
+      var actualTop = el.offsetTop
+      var current = el.offsetParent
+      while (current != null) {
+        actualTop += current.offsetTop
+        current = current.offsetParent
+      }
+      return actualTop
+    }
+    that.pricePosition.x = getAbsLeft(priceDiv)
+    that.pricePosition.y = getAbsTop(priceDiv)
   }
 }
 </script>
@@ -257,6 +339,7 @@ $activeColor: #03A9F4;
   height: 100%;
   background-color: white;
   position: relative;
+
 
   .left {
     position: absolute;
@@ -282,6 +365,7 @@ $activeColor: #03A9F4;
       background-color: #03A9F4;
       color: white;
       font-family: 500;
+      box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
     }
   }
 
@@ -367,7 +451,8 @@ $activeColor: #03A9F4;
         }
       }
     }
-    .menu-footer{
+
+    .menu-footer {
       width: 100%;
       height: $bottomHeight;
       line-height: $bottomHeight;
@@ -388,7 +473,7 @@ $activeColor: #03A9F4;
     border-top-left-radius: 30px;
     border-top-right-radius: 30px;
     background-color: white;
-
+    transition: all 0.5s ease-in-out;
 
     .car-header {
       display: flex;
@@ -412,7 +497,7 @@ $activeColor: #03A9F4;
         .car-item-left {
           width: 60px;
           height: 60px;
-          background-color: #212121;
+          background-color: lightgray;
         }
 
         .car-item-right {
@@ -499,6 +584,7 @@ $activeColor: #03A9F4;
       font-size: 20px;
       font-family: Arial, Helvetica, sans-serif;
       font-weight: 550;
+      box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
 
       .carButton-left {
         margin-left: 20px;
@@ -525,6 +611,50 @@ $activeColor: #03A9F4;
       background-color: #03A9F4;
       justify-content: space-between;
     }
+  }
+}
+</style>
+<style>
+.animate-element {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  background-color: blue;
+  border-radius: 50%;
+  z-index: 999;
+}
+
+.run-animation {
+  animation: run-left 0.5s 0.1s 1 linear, run-bottom 0.5s 0.1s 1 cubic-bezier(.66, .1, 1, .41);
+  animation-fill-mode: forwards;
+}
+
+@keyframes run-left {
+  0% {
+    left: 330px;
+  }
+
+  100% {
+    left: 90px;
+  }
+}
+
+@keyframes run-bottom {
+  0% {
+    top: 90px;
+  }
+
+  30% {
+    transform: scale(0.9)
+  }
+
+  60% {
+    transform: scale(0.8)
+  }
+
+  100% {
+    top: 590px;
+    transform: scale(0.7);
   }
 }
 </style>
