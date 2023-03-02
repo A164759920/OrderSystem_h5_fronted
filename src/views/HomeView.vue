@@ -18,7 +18,7 @@
               <div class="right-count" :class="{
                 'active': buyCount[activeNav][index] > 0 ? true : false
               }">{{ buyCount[activeNav][index] }}</div>
-              <div class="el-icon-circle-plus" @touchstart="operaAnimationELment" @click="addToCount(item, index)"></div>
+              <div class="el-icon-circle-plus" @click="addToCount($event, item, index)"></div>
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default {
       shoppingCar: [], // 购物车信息
       totalPrice: 0,  // 总价
       isShowCar: false, // 是否显示购物车
-      pricePosition: {
+      pricePosition: {   // 价签的位置
         x: 0,
         y: 0
       }
@@ -106,23 +106,15 @@ export default {
     }
   },
   methods: {
-    testRender: function () {
-
-    },
-    /**
-     * 获取元素的位置
-     */
-    getItemPosition: function (e) {
-      const position = {
-        x: parseInt(e.targetTouches[0].clientX),
-        y: parseInt(e.targetTouches[0].clientY)
-      }
-      return position
-    },
     changeActiveNav: function (index) {
       this.activeNav = index
     },
-    addToCount: function (item, index) {
+    addToCount: function (e, item, index) {
+      const startPoint = {
+        x: e.x,
+        y: e.y
+      }
+      this.operaAnimationELment(startPoint)
       this.$set(this.buyCount[this.activeNav], index, this.buyCount[this.activeNav][index] + 1)
       this.updateShoppingCar(0, {
         Dname: item.Dname,
@@ -132,37 +124,24 @@ export default {
       })
     },
     /**
-     * 处理图标动画 
+     * 控制动画组件挂载
+     * @param {Object} startPoint 点击焦点坐标
      */
-    operaAnimationELment: function (e) {
+    operaAnimationELment: function (startPoint) {
+      /**
+       * TODO:将动画组件中要显示的图片传入
+       */
       const containerDiv = document.getElementsByClassName("container")[0]
       const animateMountDiv = document.createElement("div")
       animateMountDiv.id = `animateIconMount`
       containerDiv.appendChild(animateMountDiv)
-      const elPosition = this.getItemPosition(e) // 获取点击焦点位置
       let childTemplate = Vue.extend(AnimateIconVue)
       let childVue = new childTemplate().$mount(`#animateIconMount`)
       childVue.$props.xEnd = this.pricePosition.x - 50
       childVue.$props.yEnd = this.pricePosition.y - 50
-      childVue.$props.xStart = elPosition.x - 50
-      childVue.$props.yStart = elPosition.y - 50
-      // /**
-      //  * TODO:
-      //  * 1.动态创建相应的keyframes
-      //  *  【用时间戳为每次动画的参数实时命名？】
-      //  * 2.创建animation并动态定义其中的keyframes
-      //  * 3.将创建好的animation加入到cssRules中
-      //  * 4.在动画完成的callback中
-      //  *  - 删除新建的div
-      //  *  - 从cssRule中删除本次创建的keyframes
-      //  *  - 在【价签】中动态生成小红点
-      //  * 
-      //  */
-      // el.addEventListener('animationend', (event) => {
-      //   // 添加购物车红点图标
-      //   // 删除动画元素
-      //   // el.remove()
-      // })
+      childVue.$props.xStart = startPoint.x - 50
+      childVue.$props.yStart = startPoint.y - 50
+
     },
     removeFromCount: function (item, index) {
       // 更新二维数组
